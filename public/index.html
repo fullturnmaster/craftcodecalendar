@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>導入大会カレンダー | CRAFTCODE 大会運営プラットフォーム</title>
+<title>大会カレンダー | CRAFTCODE 大会運営プラットフォーム</title>
 <meta name="description" content="CRAFTCODE 大会運営プラットフォームを導入する体操競技・新体操大会のスケジュール一覧。" />
 <style>
   :root {
@@ -256,6 +256,14 @@
   }
   .bar.finished { background: var(--finished-bar); }
   .bar.ongoing { background: var(--ongoing-bar); }
+  a.bar { text-decoration: none; display: block; }
+  a.bar.has-link:hover { filter: brightness(1.12); }
+  .bar .link-ico {
+    float: right;
+    font-weight: 700;
+    opacity: .85;
+    margin-left: 4px;
+  }
   .bar.seg-start { border-top-left-radius: 6px; border-bottom-left-radius: 6px; margin-left: 3px; }
   .bar.seg-end   { border-top-right-radius: 6px; border-bottom-right-radius: 6px; margin-right: 3px; }
   .bar .tag {
@@ -318,6 +326,15 @@
     color: var(--accent); background: var(--accent-tint);
     border-radius: 4px; padding: 1px 6px; margin-left: 5px;
   }
+  .live-link {
+    display: inline-block;
+    font-size: 12px; font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+  .live-link:hover { text-decoration: underline; }
 
   /* ---------- Footer / states ---------- */
   .meta {
@@ -352,6 +369,7 @@
   .pop.show { opacity: 1; transform: translateY(0); }
   .pop b { font-weight: 700; }
   .pop .pop-when { color: #c9cedd; display: block; margin-top: 3px; }
+  .pop .pop-link { color: #8fb4ff; display: block; margin-top: 5px; font-weight: 700; }
 
   /* ---------- Responsive ---------- */
   @media (max-width: 560px) {
@@ -374,7 +392,7 @@
     <div class="masthead-inner">
       <div class="brand"><span class="mark">CRAFTCODE</span><span>大会運営プラットフォーム</span></div>
       <h1>大会カレンダー</h1>
-      <p class="lede">CRAFTCODE大会運営プラットフォームを導入する体操競技／新体操大会の予定です。導入をご検討の場合には、空き状況をご確認ください。</p>
+      <p class="lede">CRAFTCODE 大会運営プラットフォームを導入する体操競技／新体操大会の予定です。導入をご検討の競技団体さまは、空き状況の確認にご活用ください。</p>
     </div>
   </header>
 
@@ -563,11 +581,13 @@
     inner.style.gridTemplateRows = "repeat(" + Math.max(laneCount,1) + ", auto)";
 
     segs.forEach(function(seg){
-      var bar = document.createElement("div");
       var ev = seg.ev;
+      var hasLink = ev.liveUrl && /^https?:\/\//.test(ev.liveUrl);
+      var bar = document.createElement(hasLink ? "a" : "div");
       var cls = "bar " + (isOngoing(ev) ? "ongoing" : (ev.status==="大会終了"?"finished":""));
       if(seg.isHead) cls += " seg-start";
       if(seg.isTail) cls += " seg-end";
+      if(hasLink) cls += " has-link";
       bar.className = cls;
       bar.style.gridColumn = (seg.colStart+1) + " / " + (seg.colEnd+2);
       bar.style.gridRow = (seg.lane+1);
@@ -575,12 +595,20 @@
       var label = "";
       if(ev.tags && ev.tags.length){ label += '<span class="tag">'+escapeHtml(ev.tags.join(" "))+'</span>'; }
       label += escapeHtml(displayName(ev));
+      if(hasLink){ label += '<span class="link-ico" aria-hidden="true">›</span>'; }
       bar.innerHTML = label;
 
+      if(hasLink){
+        bar.href = ev.liveUrl;
+        bar.target = "_blank";
+        bar.rel = "noopener noreferrer";
+      }
       bar.addEventListener("mouseenter", function(e){ showPop(e, ev); });
       bar.addEventListener("mousemove", function(e){ movePop(e); });
       bar.addEventListener("mouseleave", hidePop);
-      bar.addEventListener("click", function(e){ e.stopPropagation(); showPop(e, ev, true); });
+      if(!hasLink){
+        bar.addEventListener("click", function(e){ e.stopPropagation(); showPop(e, ev, true); });
+      }
       inner.appendChild(bar);
     });
 
@@ -647,11 +675,15 @@
 
     var what = document.createElement("div");
     what.className = "what";
+    var hasLink = ev.liveUrl && /^https?:\/\//.test(ev.liveUrl);
     var nm = '<span class="nm">'+escapeHtml(cleanName(ev))+'</span>';
     if(ev.tags && ev.tags.length){
       ev.tags.forEach(function(t){ nm += '<span class="tag-chip">'+escapeHtml(t)+'</span>'; });
     }
     if(ev.venue) nm += ' <span class="venue">'+escapeHtml(ev.venue)+'</span>';
+    if(hasLink){
+      nm += ' <a class="live-link" href="'+escapeHtml(ev.liveUrl)+'" target="_blank" rel="noopener noreferrer">ライブリザルト ›</a>';
+    }
     what.innerHTML = nm;
 
     var st = document.createElement("span");
@@ -675,9 +707,11 @@
   function showPop(e, ev, sticky){
     var ongoingTxt = isOngoing(ev) ? " ・ 開催中" : "";
     var tags = (ev.tags&&ev.tags.length) ? " ["+ev.tags.join("][")+"]" : "";
+    var hasLink = ev.liveUrl && /^https?:\/\//.test(ev.liveUrl);
     pop.innerHTML = "<b>"+escapeHtml(cleanName(ev))+tags+"</b>" +
       (ev.venue ? " ＠"+escapeHtml(ev.venue) : "") +
-      '<span class="pop-when">'+escapeHtml(fmtRange(ev.start, ev.end))+ongoingTxt+"</span>";
+      '<span class="pop-when">'+escapeHtml(fmtRange(ev.start, ev.end))+ongoingTxt+"</span>" +
+      (hasLink ? '<span class="pop-link">クリックでライブリザルトを開く</span>' : "");
     pop.classList.add("show");
     movePop(e);
   }
