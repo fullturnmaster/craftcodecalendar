@@ -22,6 +22,7 @@ const PROP = {
   title: "大会名（競技日）",
   period: "開催期間（設営日）",
   status: "状態",
+  live: "ライブリザルト",
 };
 
 if (!NOTION_TOKEN || !NOTION_DB_ID) {
@@ -126,6 +127,10 @@ function main() {
 
       const { name, tags, venue } = parseName(rawTitle);
 
+      // ライブリザルト(URL型)。未設定なら空文字。
+      const liveProp = props[PROP.live];
+      const liveUrl = liveProp && liveProp.url ? liveProp.url : "";
+
       events.push({
         id: page.id,
         title: rawTitle, // 元の表記そのまま(0620近畿高校@京都)
@@ -135,6 +140,7 @@ function main() {
         start: date.start, // YYYY-MM-DD
         end: date.end || date.start, // 単日の場合は start と同じ
         status, // 導入決定 / 大会終了
+        liveUrl, // ライブリザルトURL(無ければ空)
       });
     }
 
